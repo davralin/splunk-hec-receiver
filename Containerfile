@@ -7,7 +7,7 @@ COPY . .
 RUN go test ./...
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags='-s -w' -o /out/splunk-hec-receiver ./cmd/splunk-hec-receiver
 
-FROM gcr.io/distroless/static-debian13:nonroot@sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3
+FROM scratch
 
 LABEL org.opencontainers.image.title="splunk-hec-receiver"
 LABEL org.opencontainers.image.description="Bounded HEC-compatible receiver for Splunk OpenTelemetry Collector validation"
@@ -17,5 +17,5 @@ COPY --from=build /out/splunk-hec-receiver /splunk-hec-receiver
 EXPOSE 8088
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 CMD ["/splunk-hec-receiver", "healthcheck"]
 
-USER nonroot:nonroot
+USER 65532:65532
 ENTRYPOINT ["/splunk-hec-receiver"]
