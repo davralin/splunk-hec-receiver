@@ -61,7 +61,7 @@ Deploy with enough memory for the capture budget and request-processing headroom
 ## Development
 
 ```sh
-go test ./...
+cargo test
 docker build -f Containerfile -t splunk-hec-receiver:local .
 docker run --rm -p 8088:8088 splunk-hec-receiver:local
 curl -H 'Authorization: Splunk test-token' \

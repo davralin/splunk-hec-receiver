@@ -1,11 +1,18 @@
-FROM golang:1.27.2@sha256:820153096fda4de6ac1b7194d12e416b7dd8f4e9a33d17e0345b111b945162d8 AS build
+FROM rust:1-slim-bookworm@sha256:a24e292b4af7bdee351a31d3a6379972a5652f0ea22a1b6d6883324ac4f5097c AS build
 
 WORKDIR /src
-COPY go.mod ./
-RUN go mod download
-COPY . .
-RUN go test ./...
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags='-s -w' -o /out/splunk-hec-receiver ./cmd/splunk-hec-receiver
+RUN apt-get update && apt-get install --yes --no-install-recommends musl-tools && rm -rf /var/lib/apt/lists/*
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
+RUN cargo fetch --locked
+RUN rustup component add rustfmt
+RUN cargo fmt --check
+RUN cargo test --locked
+RUN target="$(rustc -vV | sed -n 's/^host: \(.*\)-gnu$/\1-musl/p')" && rustup target add "$target" && cargo build --release --locked --target "$target" && mkdir /out && cp "target/$target/release/splunk-hec-receiver" /out/splunk-hec-receiver
+
+FROM build AS test
+
+RUN cargo test --locked
 
 FROM scratch
 
