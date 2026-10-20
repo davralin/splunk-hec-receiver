@@ -18,6 +18,32 @@ jobs:
       - name: Test Rust implementation
         run: docker build --target test -f Containerfile .
 
+      - name: Build runtime image
+        run: docker build --tag splunk-hec-receiver:ci -f Containerfile .
+
+      - name: Smoke test scratch runtime
+        run: |
+          container_id="$(docker run --rm --detach --publish 127.0.0.1:18088:8088 splunk-hec-receiver:ci)"
+          cleanup() {
+            docker logs "$container_id" || true
+            docker stop "$container_id" || true
+          }
+          trap cleanup EXIT
+
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent --show-error --output /dev/null http://127.0.0.1:18088/healthz; then
+              break
+            fi
+            if [ "$attempt" -eq 20 ]; then
+              exit 1
+            fi
+            sleep 1
+          done
+
+          curl --fail --silent --show-error --header '__splunk_app_name: ci-smoke' --data-binary '{"event":"ci smoke"}' http://127.0.0.1:18088/services/collector/event
+          curl --fail --silent --show-error http://127.0.0.1:18088/api/v1/events | grep --fixed-strings '"event":"ci smoke"'
+          docker exec "$container_id" /splunk-hec-receiver healthcheck
+
   image:
     needs: test
     runs-on: ubuntu-latest
