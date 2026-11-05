@@ -1,4 +1,4 @@
-FROM rust:1-slim-bookworm@sha256:ed2c95ca377d6571b124b05e75e01207973ded639dce7d5542eb7bcd797e32aa AS build
+FROM rust:1-slim-bookworm@sha256:7d53bccd41fde2f509a276b37a8ef541f8e75fc3e1f85b059230386f512ed6c1 AS build
 
 WORKDIR /src
 RUN apt-get update && apt-get install --yes --no-install-recommends musl-tools && rm -rf /var/lib/apt/lists/*
